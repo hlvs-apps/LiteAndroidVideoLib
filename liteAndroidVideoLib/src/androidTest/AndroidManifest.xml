@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ This is a part of LiteAndroidVideoLib.
+  ~ This is a part of AndroidVideoLib.
   ~ To see the authors, look at Github for contributors of this file.
   ~
   ~ Copyright 2021  The AndroidVideoLib Authors:
-  ~       AUTHORS.md
+  ~       https://github.com/hlvs-apps/AndroidVideoLib/blob/master/AUTHORS.md
   ~ Unless otherwise noted, this is
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -19,12 +18,14 @@
   ~ limitations under the License.
   -->
 
-<resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-</resources>
+<manifest package="de.hlvsapps.test"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:name="androidx.multidex.MultiDexApplication">
+
+    <activity android:name="de.hlvsapps.test.video_test">
+        </activity>
+        <activity android:name="de.hlvsapps.test.StartActivityForResult">
+        </activity>
+    </application>
+</manifest>
