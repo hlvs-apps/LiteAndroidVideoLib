@@ -19,7 +19,6 @@ package de.hlvsapps.liteandroidvideolib.decodeeditencode;
 // All copied files are in original form in liteAndroidVideoLib/Copied.zip
 
 
-
 import android.graphics.SurfaceTexture;
 import android.opengl.EGL14;
 import android.util.Log;
@@ -30,7 +29,6 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
-
 
 
 /**
@@ -126,7 +124,7 @@ class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      * Prepares EGL.  We want a GLES 2.0 context and a surface that supports pbuffer.
      */
     private void eglSetup(int width, int height) {
-        mEGL = (EGL10)EGLContext.getEGL();
+        mEGL = (EGL10) EGLContext.getEGL();
         mEGLDisplay = mEGL.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
         if (!mEGL.eglInitialize(mEGLDisplay, null)) {
             throw new RuntimeException("unable to initialize EGL10");

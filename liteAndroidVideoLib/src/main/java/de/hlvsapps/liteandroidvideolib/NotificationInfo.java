@@ -2,7 +2,7 @@
  * This is a part of LiteAndroidVideoLib.
  * To see the authors, look at Github for contributors of this file.
  *
- * Copyright 2021  The AndroidVideoLib Authors:
+ * Copyright 2022  The LiteAndroidVideoLib Authors:
  *       AUTHORS.md
  * Unless otherwise noted, this is
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,15 +29,7 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.core.app.NotificationCompat;
-import androidx.work.Data;
-import androidx.work.ForegroundInfo;
-import androidx.work.WorkManager;
-import androidx.work.Worker;
-
-import java.util.UUID;
 
 /**
  * Helper class to create a Notification
@@ -46,13 +38,14 @@ import java.util.UUID;
  */
 public class NotificationInfo implements Parcelable {
 
-    enum MethodNameCalledForProgress{
-        START,UPDATE,STOP
+    enum MethodNameCalledForProgress {
+        START, UPDATE, STOP
     }
-    static final String keyMethodNameCalledForProgress="keyMethodNameCalledForProgress";
-    static final String keyFinished="keyFinished";
-    static final String keyStatus="keyStatus";
-    static final String keyMax="keyMax";
+
+    static final String keyMethodNameCalledForProgress = "keyMethodNameCalledForProgress";
+    static final String keyFinished = "keyFinished";
+    static final String keyStatus = "keyStatus";
+    static final String keyMax = "keyMax";
 
     protected NotificationInfo(Parcel in) {
         titleOfNotification = in.readString();
@@ -100,33 +93,6 @@ public class NotificationInfo implements Parcelable {
         }
     };
 
-    void start(Worker worker, Context context){
-        Data progressData=new Data.Builder()
-                .putInt(keyMethodNameCalledForProgress,MethodNameCalledForProgress.START.ordinal())
-                .build();
-        worker.setProgressAsync(progressData);
-        worker.setForegroundAsync(createForegroundInfo(context,worker.getId(),0,1,true));
-    }
-
-    void setProgress(Worker worker,int status,int max,Context context){
-        Data progressData=new Data.Builder()
-                .putInt(keyMethodNameCalledForProgress,MethodNameCalledForProgress.UPDATE.ordinal())
-                .putInt(keyStatus,status)
-                .putInt(keyMax,max)
-                .build();
-        worker.setProgressAsync(progressData);
-        worker.setForegroundAsync(createForegroundInfo(context,worker.getId(),status,max,false));
-    }
-
-
-    void stop(Worker worker,boolean finished){
-        Data progressData=new Data.Builder()
-                .putInt(keyMethodNameCalledForProgress,MethodNameCalledForProgress.STOP.ordinal())
-                .putBoolean(keyFinished,finished)
-                .build();
-        worker.setProgressAsync(progressData);
-    }
-
     public NotificationInfo(
             String titleOfNotification,
             String cancelString,
@@ -165,7 +131,7 @@ public class NotificationInfo implements Parcelable {
             String nameOfChannel,
             String descriptionOfChannel) {
         this(titleOfNotification,
-                cancelString,addCancelOption,
+                cancelString, addCancelOption,
                 channel_id,
                 notificationIcon,
                 cancelIcon,
@@ -189,40 +155,6 @@ public class NotificationInfo implements Parcelable {
     public final String descriptionOfChannel;
 
 
-
-    @NonNull
-    ForegroundInfo createForegroundInfo(Context context, UUID id, int progress, int max, boolean intermediate) {
-        // Build a notification using bytesRead and contentLength
-        // This PendingIntent can be used to cancel the worker
-        PendingIntent intent = WorkManager.getInstance(context)
-                .createCancelPendingIntent(id);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createChannel(context);
-        }
-
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setContentTitle(titleOfNotification)
-                .setTicker(titleOfNotification)
-                .setChannelId(CHANNEL_ID)
-                .setSilent(true)
-                .setOnlyAlertOnce(true)
-                .setSmallIcon(notificationIcon)
-                .setProgress(max, progress, intermediate)
-                .setOngoing(true);
-        // Add the cancel action to the notification which can
-        // be used to cancel the worker
-        if(addCancelOption){
-            notificationBuilder=notificationBuilder.addAction(cancelIcon, cancelString, intent);
-        }
-        if(pendingIntentForNotification!=null){
-            notificationBuilder=notificationBuilder.setContentIntent(pendingIntentForNotification.getPendingIntent(context));
-        }
-
-
-        return new ForegroundInfo(NOTIFICATION_ID,notificationBuilder.build(),foregroundServiceType);
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     private void createChannel(Context context) {
         int importance = NotificationManager.IMPORTANCE_DEFAULT;
@@ -234,7 +166,7 @@ public class NotificationInfo implements Parcelable {
         notificationManager.createNotificationChannel(channel);
     }
 
-    public static final class PendingIntentForNotificationInfo implements Parcelable{
+    public static final class PendingIntentForNotificationInfo implements Parcelable {
         private final Intent intentForPendingIntent;
         private final int requestCode;
         private final int flags;
@@ -245,7 +177,7 @@ public class NotificationInfo implements Parcelable {
             this.flags = flags;
         }
 
-        protected PendingIntentForNotificationInfo(Parcel in) {
+        private PendingIntentForNotificationInfo(Parcel in) {
             intentForPendingIntent = in.readParcelable(Intent.class.getClassLoader());
             requestCode = in.readInt();
             flags = in.readInt();
@@ -275,7 +207,7 @@ public class NotificationInfo implements Parcelable {
             }
         };
 
-        public PendingIntent getPendingIntent(Context context){
+        public PendingIntent getPendingIntent(Context context) {
             return PendingIntent.getActivity(context, requestCode, intentForPendingIntent, flags);
         }
     }

@@ -2,7 +2,7 @@
  * This is a part of LiteAndroidVideoLib.
  * To see the authors, look at Github for contributors of this file.
  *
- * Copyright 2021  The AndroidVideoLib Authors:
+ * Copyright 2022  The LiteAndroidVideoLib Authors:
  *       AUTHORS.md
  * Unless otherwise noted, this is
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+
 import javax.microedition.khronos.opengles.GL10;
 
 
@@ -74,18 +75,22 @@ public class DecodeEditEncode extends AppCompatActivity {
     private int mBitRate = -1;
     // largest color component delta seen (i.e. actual vs. expected)
     private int mLargestColorDelta;
+
     public void testVideoEditQCIF() throws Throwable {
         setParameters(176, 144, 1000000);
         VideoEditWrapper.runTest(this);
     }
+
     public void testVideoEditQVGA() throws Throwable {
         setParameters(320, 240, 2000000);
         VideoEditWrapper.runTest(this);
     }
+
     public void testVideoEdit720p() throws Throwable {
         setParameters(1280, 720, 6000000);
         VideoEditWrapper.runTest(this);
     }
+
     /**
      * Wraps testEditVideo, running it in a new thread.  Required because of the way
      * SurfaceTexture.OnFrameAvailableListener works when the current thread has a Looper
@@ -94,9 +99,11 @@ public class DecodeEditEncode extends AppCompatActivity {
     private static class VideoEditWrapper implements Runnable {
         private Throwable mThrowable;
         private DecodeEditEncode mTest;
+
         private VideoEditWrapper(DecodeEditEncode test) {
             mTest = test;
         }
+
         @Override
         public void run() {
             try {
@@ -105,7 +112,10 @@ public class DecodeEditEncode extends AppCompatActivity {
                 mThrowable = th;
             }
         }
-        /** Entry point. */
+
+        /**
+         * Entry point.
+         */
         public static void runTest(DecodeEditEncode obj) throws Throwable {
             VideoEditWrapper wrapper = new VideoEditWrapper(obj);
             Thread th = new Thread(wrapper, "codec test");
@@ -116,6 +126,7 @@ public class DecodeEditEncode extends AppCompatActivity {
             }
         }
     }
+
     /**
      * Sets the desired frame size and bit rate.
      */
@@ -127,6 +138,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         mHeight = height;
         mBitRate = bitRate;
     }
+
     /**
      * Tests editing of a video file with GL.
      */
@@ -151,6 +163,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         }
         checkVideoFile(destChunks);
     }
+
     /**
      * Generates a test video file, saving it as VideoChunks.  We generate frames with GL to
      * avoid having to deal with multiple YUV formats.
@@ -204,6 +217,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         }
         return true;
     }
+
     /**
      * Returns the first codec capable of encoding the specified MIME type, or null if no
      * match was found.
@@ -224,6 +238,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         }
         return null;
     }
+
     /**
      * Generates video frames, feeds them into the encoder, and writes the output to the
      * VideoChunks instance.
@@ -248,7 +263,10 @@ public class DecodeEditEncode extends AppCompatActivity {
                     if (VERBOSE) Log.d(TAG, "signaling input EOS");
                     if (WORK_AROUND_BUGS) {
                         // Might drop a frame, but at least we won't crash mediaserver.
-                        try { Thread.sleep(500); } catch (InterruptedException ie) {}
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException ie) {
+                        }
                         outputDone = true;
                     } else {
                         encoder.signalEndOfInputStream();
@@ -283,7 +301,7 @@ public class DecodeEditEncode extends AppCompatActivity {
                     MediaFormat newFormat = encoder.getOutputFormat();
                     if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
                 } else if (encoderStatus < 0) {
-                    Log.e("generateVideoData","unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
+                    Log.e("generateVideoData", "unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
                     throw new IllegalStateException();
                 } else { // encoderStatus >= 0
                     ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
@@ -293,8 +311,8 @@ public class DecodeEditEncode extends AppCompatActivity {
                     }
                     // Codec config flag must be set iff this is the first chunk of output.  This
                     // may not hold for all codecs, but it appears to be the case for video/avc.
-                    if(!((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0 ||
-                            outputCount != 0)){
+                    if (!((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0 ||
+                            outputCount != 0)) {
                         return;
                     }
                     if (info.size != 0) {
@@ -315,6 +333,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         // One chunk per frame, plus one for the config data.
         //assertEquals("Frame count", NUM_FRAMES + 1, outputCount);
     }
+
     /**
      * Generates a frame of data using GL commands.
      * <p>
@@ -323,7 +342,8 @@ public class DecodeEditEncode extends AppCompatActivity {
      *   0 1 2 3
      *   7 6 5 4
      * </pre>
-     * We draw one of the eight rectangles and leave the rest set to the zero-fill color.     */
+     * We draw one of the eight rectangles and leave the rest set to the zero-fill color.
+     */
     private void generateSurfaceFrame(int frameIndex) {
         frameIndex %= 8;
         int startX, startY;
@@ -343,6 +363,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         GLES20.glClearColor(TEST_R1 / 255.0f, TEST_G1 / 255.0f, TEST_B1 / 255.0f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
     }
+
     /**
      * Edits a video file, saving the contents to a new file.  This involves decoding and
      * re-encoding, not to mention conversions between YUV and RGB, and so may be lossy.
@@ -406,6 +427,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         }
         return outputData;
     }
+
     /**
      * Edits a stream of video data.
      */
@@ -471,12 +493,12 @@ public class DecodeEditEncode extends AppCompatActivity {
                     MediaFormat newFormat = encoder.getOutputFormat();
                     if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
                 } else if (encoderStatus < 0) {
-                    Log.e("editVideoData","unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
+                    Log.e("editVideoData", "unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
                     throw new IllegalStateException();
                 } else { // encoderStatus >= 0
                     ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
                     if (encodedData == null) {
-                        Log.e("editVideoData","encoderOutputBuffer " + encoderStatus + " was null");
+                        Log.e("editVideoData", "encoderOutputBuffer " + encoderStatus + " was null");
                         throw new IllegalStateException();
                     }
                     // Write the data to the output "file".
@@ -511,7 +533,7 @@ public class DecodeEditEncode extends AppCompatActivity {
                         MediaFormat newFormat = decoder.getOutputFormat();
                         if (VERBOSE) Log.d(TAG, "decoder output format changed: " + newFormat);
                     } else if (decoderStatus < 0) {
-                        Log.e("editVideoData","unexpected result from decoder.dequeueOutputBuffer: "+decoderStatus);
+                        Log.e("editVideoData", "unexpected result from decoder.dequeueOutputBuffer: " + decoderStatus);
                         throw new IllegalStateException();
                     } else { // decoderStatus >= 0
                         if (VERBOSE) Log.d(TAG, "surface decoder given buffer "
@@ -554,6 +576,7 @@ public class DecodeEditEncode extends AppCompatActivity {
                     outputCount + " out");
         }
     }
+
     /**
      * Checks the video file to see if the contents match our expectations.  We decode the
      * video to a Surface and check the pixels with GL.
@@ -571,7 +594,7 @@ public class DecodeEditEncode extends AppCompatActivity {
             decoder.start();
             int badFrames = checkVideoData(inputData, decoder, surface);
             if (badFrames != 0) {
-                Log.e("checkVideoFile","Found " + badFrames + " bad frames");
+                Log.e("checkVideoFile", "Found " + badFrames + " bad frames");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -586,6 +609,7 @@ public class DecodeEditEncode extends AppCompatActivity {
             Log.i(TAG, "Largest color delta: " + mLargestColorDelta);
         }
     }
+
     /**
      * Checks the video data.
      *
@@ -645,7 +669,7 @@ public class DecodeEditEncode extends AppCompatActivity {
                     MediaFormat newFormat = decoder.getOutputFormat();
                     if (VERBOSE) Log.d(TAG, "decoder output format changed: " + newFormat);
                 } else if (decoderStatus < 0) {
-                    Log.e("checkVideoData","unexpected result from decoder.dequeueOutputBuffer: " + decoderStatus);
+                    Log.e("checkVideoData", "unexpected result from decoder.dequeueOutputBuffer: " + decoderStatus);
                     throw new IllegalStateException();
                 } else { // decoderStatus >= 0
                     ByteBuffer decodedData = decoderOutputBuffers[decoderStatus];
@@ -663,8 +687,8 @@ public class DecodeEditEncode extends AppCompatActivity {
                     decoder.releaseOutputBuffer(decoderStatus, doRender);
                     if (doRender) {
                         if (VERBOSE) Log.d(TAG, "awaiting frame " + checkIndex);
-                        if( computePresentationTime(checkIndex)== (info.presentationTimeUs)){
-                            Log.e("checkVideoData","Wrong time stamp");
+                        if (computePresentationTime(checkIndex) == (info.presentationTimeUs)) {
+                            Log.e("checkVideoData", "Wrong time stamp");
                             throw new IllegalStateException();
                         }
                         surface.awaitNewImage();
@@ -678,6 +702,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         }
         return badFrames;
     }
+
     /**
      * Checks the frame for correctness, using GL to check RGB values.
      *
@@ -724,6 +749,7 @@ public class DecodeEditEncode extends AppCompatActivity {
         }
         return !frameFailed;
     }
+
     /**
      * Returns true if the actual color value is close to the expected color value.  Updates
      * mLargestColorDelta.
@@ -736,12 +762,14 @@ public class DecodeEditEncode extends AppCompatActivity {
         }
         return (delta <= MAX_DELTA);
     }
+
     /**
      * Generates the presentation time for frame N, in microseconds.
      */
     private static long computePresentationTime(int frameIndex) {
         return 123 + frameIndex * 1000000 / FRAME_RATE;
     }
+
     /**
      * The elementary stream coming out of the "video/avc" encoder needs to be fed back into
      * the decoder one chunk at a time.  If we just wrote the data to a file, we would lose
@@ -753,18 +781,21 @@ public class DecodeEditEncode extends AppCompatActivity {
         private ArrayList<byte[]> mChunks = new ArrayList<byte[]>();
         private ArrayList<Integer> mFlags = new ArrayList<Integer>();
         private ArrayList<Long> mTimes = new ArrayList<Long>();
+
         /**
          * Sets the MediaFormat, for the benefit of a future decoder.
          */
         public void setMediaFormat(MediaFormat format) {
             mMediaFormat = format;
         }
+
         /**
          * Gets the MediaFormat that was used by the encoder.
          */
         public MediaFormat getMediaFormat() {
             return mMediaFormat;
         }
+
         /**
          * Adds a new chunk.  Advances buf.position to buf.limit.
          */
@@ -775,12 +806,14 @@ public class DecodeEditEncode extends AppCompatActivity {
             mFlags.add(flags);
             mTimes.add(time);
         }
+
         /**
          * Returns the number of chunks currently held.
          */
         public int getNumChunks() {
             return mChunks.size();
         }
+
         /**
          * Copies the data from chunk N into "dest".  Advances dest.position.
          */
@@ -788,18 +821,21 @@ public class DecodeEditEncode extends AppCompatActivity {
             byte[] data = mChunks.get(chunk);
             dest.put(data);
         }
+
         /**
          * Returns the flags associated with chunk N.
          */
         public int getChunkFlags(int chunk) {
             return mFlags.get(chunk);
         }
+
         /**
          * Returns the timestamp associated with chunk N.
          */
         public long getChunkTime(int chunk) {
             return mTimes.get(chunk);
         }
+
         /**
          * Writes the chunks to a file as a contiguous stream.  Useful for debugging.
          */

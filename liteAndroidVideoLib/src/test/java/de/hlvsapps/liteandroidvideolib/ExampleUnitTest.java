@@ -2,7 +2,7 @@
  * This is a part of LiteAndroidVideoLib.
  * To see the authors, look at Github for contributors of this file.
  *
- * Copyright 2021  The AndroidVideoLib Authors: 
+ * Copyright 2022  The LiteAndroidVideoLib Authors:
  *       AUTHORS.md
  * Unless otherwise noted, this is
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ package de.hlvsapps.liteandroidvideolib;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Example local unit test, which will execute on the development machine (host).

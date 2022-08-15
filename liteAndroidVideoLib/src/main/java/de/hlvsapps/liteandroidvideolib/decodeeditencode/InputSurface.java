@@ -20,10 +20,10 @@ package de.hlvsapps.liteandroidvideolib.decodeeditencode;
 
 
 import android.opengl.EGL14;
-import android.opengl.EGLExt;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
+import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
 import android.util.Log;
 import android.view.Surface;
