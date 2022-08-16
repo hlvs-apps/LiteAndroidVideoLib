@@ -60,6 +60,8 @@ dependencies {
     releaseImplementation 'com.homesoft.bitmap2video:bitmap2video:2.0.0'
     debugImplementation 'com.homesoft.bitmap2video:bitmap2video-debug:2.0.0'
 
+    api 'com.github.ZeroOneZeroR:android_audio_mixer:v1.1'
+
     implementation 'org.jetbrains:annotations:23.0.0'
     implementation 'androidx.core:core:1.8.0'
     implementation 'androidx.appcompat:appcompat:1.5.0'

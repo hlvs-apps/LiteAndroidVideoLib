@@ -152,6 +152,25 @@ public class VideoFrameExtractor {
         return null;
     }
 
+    public static boolean hasAudioTrack(ParcelFileDescriptor descriptor){
+        MediaExtractor extractor = new MediaExtractor();
+        try {
+            extractor.setDataSource(descriptor.getFileDescriptor());
+            int trackIndex = selectAudioTrack(extractor);
+            if (trackIndex < 0) {
+                return false;
+            }
+            extractor.selectTrack(trackIndex);
+            return true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            extractor.release();
+        }
+        return false;
+    }
+
     /**
      * Tests extraction from an MP4 to a series of PNG files.
      */
@@ -227,6 +246,35 @@ public class VideoFrameExtractor {
     public interface BitmapHandler {
         void handleBitmap(Bitmap bitmap, int numOfFrame);
     }
+
+    /**
+     * Selects the audio track, if any.
+     *
+     * @return the track index, or -1 if no audio track is found.
+     */
+    private static int selectAudioTrack(MediaExtractor extractor) {
+        // Select the first video track we find, ignore the rest.
+        int numTracks = extractor.getTrackCount();
+        if (VERBOSE) {
+            Log.d(TAG, "Num of Tracks:" + numTracks);
+        }
+        for (int i = 0; i < numTracks; i++) {
+            MediaFormat format = extractor.getTrackFormat(i);
+            String mime = format.getString(MediaFormat.KEY_MIME);
+            if (VERBOSE) {
+                Log.d(TAG, "Mime Type:" + mime);
+            }
+            if (mime.startsWith("audio/")) {
+                if (VERBOSE) {
+                    Log.d(TAG, "AudioExtractor selected track " + i + " (" + mime + "): " + format);
+                }
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
 
     /**
      * Selects the video track, if any.

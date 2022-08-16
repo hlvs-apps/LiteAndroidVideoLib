@@ -26,6 +26,7 @@ import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.Nullable;
@@ -34,6 +35,7 @@ import androidx.annotation.RequiresApi;
 import com.homesoft.encoder.FileOrParcelFileDescriptor;
 import com.homesoft.encoder.Muxer;
 import com.homesoft.encoder.MuxerConfig;
+import com.homesoft.encoder.MuxerJavaConfiguration;
 import com.homesoft.encoder.MuxingPending;
 
 import java.io.File;
@@ -47,6 +49,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import de.hlvsapps.liteandroidvideolib.decodeeditencode.VideoFrameExtractor;
+import zeroonezero.android.audio_mixer.AudioMixer;
+import zeroonezero.android.audio_mixer.input.AudioInput;
+import zeroonezero.android.audio_mixer.input.BlankAudioInput;
+import zeroonezero.android.audio_mixer.input.GeneralAudioInput;
 
 public class RendererRunnable implements Runnable {
 
@@ -60,9 +66,10 @@ public class RendererRunnable implements Runnable {
     private final int iFrameIntervall;
     private float framesPerSecond;
     private final RenderTask renderTask;
+    private final AudioTask audioTask;
     private ProgressHandler progressHandler;
 
-    public RendererRunnable(Context activityContext, Uri inputUri, UriOrFile outputUri, int videoWidth, int videoHeight, int framesPerImage, int bitrate, int iFrameIntervall, float framesPerSecond, RenderTask renderTask) {
+    public RendererRunnable(Context activityContext, Uri inputUri, UriOrFile outputUri, int videoWidth, int videoHeight, int framesPerImage, int bitrate, int iFrameIntervall, float framesPerSecond, RenderTask renderTask, AudioTask audioTask) {
         this.activityContext = activityContext;
         this.inputUri = inputUri;
         this.outputUri = outputUri;
@@ -73,6 +80,11 @@ public class RendererRunnable implements Runnable {
         this.iFrameIntervall = iFrameIntervall;
         this.framesPerSecond = framesPerSecond;
         this.renderTask = renderTask;
+        this.audioTask = audioTask;
+    }
+
+    public RendererRunnable(Context activityContext, Uri inputUri, UriOrFile outputUri, int videoWidth, int videoHeight, int framesPerImage, int bitrate, int iFrameIntervall, float framesPerSecond, RenderTask renderTask) {
+        this(activityContext,inputUri,outputUri,videoWidth,videoHeight,framesPerImage,bitrate,iFrameIntervall,framesPerSecond,renderTask,null);
     }
 
     public void setProgressHandler(ProgressHandler progressHandler) {
@@ -84,13 +96,13 @@ public class RendererRunnable implements Runnable {
         try (ParcelFileDescriptor parcelFileDescriptor = activityContext.getContentResolver().openFileDescriptor(inputUri, "r")) {
 
             MediaFormat format = VideoFrameExtractor.getVideoInformation(parcelFileDescriptor);
+            boolean hasAudioTrack=VideoFrameExtractor.hasAudioTrack(parcelFileDescriptor);
             if (format == null) return;
             int originalVideoWidth = format.getInteger(MediaFormat.KEY_WIDTH);
             int originalVideoHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
 
             try {
                 int originalBitrate = format.getInteger(MediaFormat.KEY_BIT_RATE);
-
                 if (bitrate == -1) {
                     bitrate = originalBitrate;
                 }
@@ -128,7 +140,7 @@ public class RendererRunnable implements Runnable {
             }
 
 
-            MuxerConfig muxerConfig = new MuxerConfig(outputUri.getFileOrParcelFileDescriptor(activityContext.getApplicationContext()), videoWidth, videoHeight, framesPerImage, framesPerSecond, bitrate, iFrameIntervall);
+            MuxerConfig muxerConfig = new MuxerJavaConfiguration(outputUri.getFileOrParcelFileDescriptor(activityContext.getApplicationContext()), videoWidth, videoHeight, framesPerImage, framesPerSecond, bitrate, iFrameIntervall);
             final FrameBuffer buf = new FrameBuffer();
             final Muxer muxer = new Muxer(activityContext.getApplicationContext(), muxerConfig);
             VideoFrameExtractor.BitmapHandler handler = (bitmap, numOfFrame) -> {
@@ -154,10 +166,46 @@ public class RendererRunnable implements Runnable {
                     progressHandler.handleProgress(numOfFrame, lengthInFrames);
             };
             VideoFrameExtractor extractor = new VideoFrameExtractor();
-            if (muxer.prepareMuxingFrameByFrame(null) instanceof MuxingPending) {
+            AudioMixer audioMixer = null;
+            AudioInput videoAudio;
+            if(audioTask!=null){
+                audioMixer = new AudioMixer(muxerConfig.getFrameMuxer().getMediaMuxer());
+                audioMixer.setSampleRate(48000);
+                audioMixer.setBitRate(320000);
+                audioMixer.setChannelCount(2);
+                audioMixer.setMixingType(AudioMixer.MixingType.PARALLEL);
+                if(hasAudioTrack)
+                    videoAudio = new GeneralAudioInput(parcelFileDescriptor.getFileDescriptor());
+                else
+                    videoAudio = new BlankAudioInput(length);
+                audioTask.configureAudioMixer(audioMixer,videoAudio,hasAudioTrack);
+                if(hasAudioTrack) {
+                    BlankAudioInput input=new BlankAudioInput(videoAudio.getDurationUs());
+                    input.setVolume(0f);
+                    audioMixer.addDataSource(input);
+                }
+                if (progressHandler !=null)
+                    audioMixer.setProcessingListener(new AudioMixer.ProcessingListener() {
+                        @Override
+                        public void onProgress(double progress) {
+                            progressHandler.handleAudioProgress(progress);
+                        }
+
+                        @Override
+                        public void onEnd() {
+                            progressHandler.handleAudioFinish();
+                        }
+                    });
+                audioMixer.start();
+            }
+            if (muxer.prepareMuxingFrameByFrame() instanceof MuxingPending) {
                 extractor.extractMpegFrames(parcelFileDescriptor, handler, videoWidth, videoHeight, rotate);
                 handler.handleBitmap(null, (int) lengthInFrames - 1);
-                muxer.endMuxingFrameByFrame();
+                if(audioMixer!=null)
+                    muxer.endMuxingFrameByFrame(audioMixer::processSync);
+                else muxer.endMuxingFrameByFrame();
+                if (progressHandler!=null)
+                    progressHandler.handleFinish();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -166,6 +214,19 @@ public class RendererRunnable implements Runnable {
 
     public interface ProgressHandler {
         void handleProgress(long progress, long total);
+
+        /**
+         * Only called when everything successful
+         */
+        default void handleFinish(){
+        }
+        default void handleAudioFinish(){
+        }
+        default void handleAudioProgress(double progress){
+            if(BuildConfig.DEBUG){
+                Log.d("Render/AudioProcessing","Audio Processing Progress:"+progress+"    (info:only in debug version)");
+            }
+        }
     }
 
 
